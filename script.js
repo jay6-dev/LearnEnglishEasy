@@ -1,17 +1,43 @@
-function uploadAudio() {
-    const fileInput = document.getElementById('audioFile');
-    const file = fileInput.files[0];
-    const formData = new FormData();
-    formData.append('file', file);
+// Function to handle speech recognition
+document.getElementById('startButton').addEventListener('click', () => {
+    const transcriptionElement = document.getElementById('transcription');
+    const feedbackElement = document.getElementById('feedback');
 
-    fetch('http://localhost:5000/upload', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById('transcription').innerText = `Transcription: ${data.transcription}`;
-        document.getElementById('feedback').innerText = `Feedback: ${data.feedback}`;
-    })
-    .catch(error => console.error('Error:', error));
-}
+    // Check if the browser supports speech recognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        transcriptionElement.textContent = "Sorry, your browser does not support speech recognition.";
+        return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US'; // Set the language to English
+    recognition.interimResults = false; // Don't show interim results
+    recognition.maxAlternatives = 1; // Return the most confident result
+
+    // Start speech recognition
+    transcriptionElement.textContent = "Listening... 🎤";
+    feedbackElement.textContent = ""; // Clear previous feedback
+
+    recognition.start();
+
+    // Event fired when the speech recognition service returns a result
+    recognition.addEventListener('result', (event) => {
+        const transcript = event.results[0][0].transcript;
+        transcriptionElement.textContent = `You said: '${transcript}'`;
+
+        // Provide basic feedback based on the transcript
+        feedbackElement.textContent = "Great! Your pronunciation is clear!";
+    });
+
+    // Event fired when the speech recognition service ends
+    recognition.addEventListener('end', () => {
+        transcriptionElement.textContent += " (Speech recognition ended)";
+    });
+
+    // Error handling
+    recognition.addEventListener('error', (event) => {
+        transcriptionElement.textContent = `Error: ${event.error}`;
+        feedbackElement.textContent = "Please try again.";
+    });
+});
